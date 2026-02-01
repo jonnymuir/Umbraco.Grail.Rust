@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <style>
+        umb-app {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        content-cartographer {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <!-- Lit component will mount here -->
+    <content-cartographer></content-cartographer>
+
+    <!-- Load WASM module and component -->
+    <script type="module">
+        import('/wasm/grail_core.js').then(module => {
+            console.log('✅ WASM module loaded');
+        }).catch(err => {
+            console.error('Failed to load WASM:', err);
+        });
+
+        // Load the Lit web component
+        import('/App_Plugins/ContentCartographer/content-cartographer.js').then(module => {
+            console.log('✅ Lit component loaded');
+        }).catch(err => {
+            console.error('Failed to load component:', err);
+        });
+    </script>
+</body>
+</html>
