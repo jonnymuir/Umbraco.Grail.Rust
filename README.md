@@ -39,9 +39,56 @@ Umbraco 17 Backoffice (C# + Lit)
 ## Quick Start
 
 ### Prerequisites
-- **.NET 10 SDK**
-- **Node.js 18+**
-- **Rust & wasm-pack** (if rebuilding WASM)
+- **.NET 10 SDK** - [Download here](https://dotnet.microsoft.com/download)
+- **Node.js 18+** (optional - only needed for rebuilding)
+- **Rust & wasm-pack** (optional - only if modifying WASM code)
+
+### Setting Up the Demo
+
+The demo instance is **not included** in the repository. Use the setup script to create it:
+
+```bash
+# Run the automated setup script
+./setup-demo.sh
+```
+
+This script will:
+1. ✅ Check for .NET SDK installation
+2. 📁 Create `demo_instance/UmbracoDemoCartographer/` directory
+3. 🆕 Run `dotnet new umbraco` to create a fresh Umbraco 17 instance
+4. 🦀 Build the Content Cartographer package
+5. 📦 Copy the compiled DLL and WASM files to the demo instance
+
+### Manual Setup (if script fails)
+
+```bash
+# 1. Create demo instance directory
+mkdir -p demo_instance
+cd demo_instance
+
+# 2. Create new Umbraco 17 project
+dotnet new umbraco -n UmbracoDemoCartographer --release Latest
+
+# 3. Build Content Cartographer package
+cd ../packages/ContentCartographer.Core
+dotnet build -c Release
+
+# 4. Copy package DLL to demo
+cp bin/Release/net10.0/Umbraco.Grail.ContentCartographer.dll \
+   ../../demo_instance/UmbracoDemoCartographer/bin/
+
+# 5. Create symbolic link for development
+cd ../../demo_instance/UmbracoDemoCartographer/wwwroot
+mkdir -p app_plugins
+cd app_plugins
+ln -s ../../../../packages/ContentCartographer.Core/App_Plugins/ContentCartographer \
+      content-cartographer
+
+# 6. Copy WASM files
+mkdir -p ../../../wwwroot/app_plugins/content-cartographer/wasm
+cp ../../../../engine/grail_core/pkg/* \
+   ../../../wwwroot/app_plugins/content-cartographer/wasm/
+```
 
 ### Running the Demo
 
@@ -50,7 +97,55 @@ cd demo_instance/UmbracoDemoCartographer
 dotnet run
 ```
 
-Then open https://localhost:44356/umbraco and navigate to any content node to see the visualization.
+Then open **https://localhost:44356/umbraco** in your browser.
+
+### First Time Setup
+
+On first run, you'll need to complete the Umbraco installation wizard:
+
+1. **Choose database**: SQLite (recommended for demo)
+2. **Create admin account**: Set your username and password
+3. **Complete setup**: Follow the wizard to finish
+
+### Creating Sample Content
+
+To see the graph visualization, you need some content:
+
+1. Go to **Settings** → **Document Types** → **Create**
+2. Create a simple document type (e.g., "Page") with a "Title" property
+3. Add the **Content Cartographer** property:
+   - Name: `Content Graph`
+   - Property Editor: **Content Cartographer**
+4. Go to **Content** → **Create** and add some pages
+5. Publish the pages
+6. Click on any page and scroll down to see the **3D graph visualization**!
+
+The graph will show:
+- **Colored spheres** sized by PageRank (importance)
+- **Page names** floating above each node
+- **Gray lines** connecting parent-child relationships
+- **Interactive controls** - drag to rotate, scroll to zoom
+
+### Development Workflow with Symbolic Link
+
+The setup includes a symbolic link from the demo's `app_plugins` to the package source:
+
+```
+demo_instance/UmbracoDemoCartographer/wwwroot/app_plugins/content-cartographer
+    ↓ (symlink)
+packages/ContentCartographer.Core/App_Plugins/ContentCartographer
+```
+
+**This means:**
+- ✅ Edit `extensions.js` in the package directory
+- ✅ Refresh browser to see changes immediately
+- ✅ No manual file copying needed!
+
+To verify the symbolic link:
+```bash
+ls -la demo_instance/UmbracoDemoCartographer/wwwroot/app_plugins/
+# Should show: content-cartographer -> ../../../../packages/...
+```
 
 ## Setting Up Test Content
 
