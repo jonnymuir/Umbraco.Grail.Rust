@@ -8,6 +8,9 @@ export class CartographerWasm {
     add_nodes(nodes_json: string): void;
     analyze_impact(node_id: string): string;
     calculate_layout(center_node_id: string | null | undefined, iterations: number): string;
+    calculate_pagerank(iterations?: number | null): string;
+    detect_communities(): string;
+    find_shortest_path(from_id: string, to_id: string): string;
     get_graph_stats(): string;
     constructor();
 }
@@ -23,6 +26,9 @@ export interface InitOutput {
     readonly cartographerwasm_add_nodes: (a: number, b: number, c: number) => [number, number];
     readonly cartographerwasm_analyze_impact: (a: number, b: number, c: number) => [number, number, number, number];
     readonly cartographerwasm_calculate_layout: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly cartographerwasm_calculate_pagerank: (a: number, b: number) => [number, number, number, number];
+    readonly cartographerwasm_detect_communities: (a: number) => [number, number, number, number];
+    readonly cartographerwasm_find_shortest_path: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly cartographerwasm_get_graph_stats: (a: number) => [number, number];
     readonly cartographerwasm_new: () => number;
     readonly check_the_grail: (a: number, b: number) => [number, number];

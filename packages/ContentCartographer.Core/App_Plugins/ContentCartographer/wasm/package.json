@@ -1,0 +1,15 @@
+{
+  "name": "grail_core",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "grail_core_bg.wasm",
+    "grail_core.js",
+    "grail_core.d.ts"
+  ],
+  "main": "grail_core.js",
+  "types": "grail_core.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

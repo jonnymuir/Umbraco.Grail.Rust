@@ -4,6 +4,7 @@ use serde_json;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use petgraph::Direction;
+use petgraph::algo::dijkstra;
 use std::collections::HashMap;
 
 // ============================================================================
@@ -299,6 +300,122 @@ impl CartographyEngine {
             impact_score,
         })
     }
+
+    /// Find shortest path between two nodes using Dijkstra's algorithm
+    pub fn shortest_path(&self, from_id: &str, to_id: &str) -> Option<Vec<String>> {
+        let from_idx = *self.node_map.get(from_id)?;
+        let to_idx = *self.node_map.get(to_id)?;
+        
+        let paths = dijkstra(&self.graph, from_idx, Some(to_idx), |_| 1);
+        
+        if !paths.contains_key(&to_idx) {
+            return None;
+        }
+        
+        // Reconstruct path
+        let mut path = vec![to_idx];
+        let mut current = to_idx;
+        
+        while current != from_idx {
+            let mut found = false;
+            for edge_ref in self.graph.edges_directed(current, Direction::Incoming) {
+                let source = edge_ref.source();
+                if paths.contains_key(&source) && paths[&source] + 1 == paths[&current] {
+                    path.push(source);
+                    current = source;
+                    found = true;
+                    break;
+                }
+            }
+            if !found { return None; }
+        }
+        
+        path.reverse();
+        Some(path.iter().filter_map(|idx| {
+            self.graph.node_weight(*idx).map(|n| n.id.clone())
+        }).collect())
+    }
+
+    /// Calculate PageRank centrality for all nodes
+    pub fn calculate_pagerank(&self, iterations: usize) -> HashMap<String, f32> {
+        let node_count = self.graph.node_count() as f32;
+        let damping = 0.85;
+        let mut ranks: HashMap<NodeIndex, f32> = HashMap::new();
+        
+        // Initialize ranks
+        for idx in self.graph.node_indices() {
+            ranks.insert(idx, 1.0 / node_count);
+        }
+        
+        // Iterate
+        for _ in 0..iterations {
+            let mut new_ranks: HashMap<NodeIndex, f32> = HashMap::new();
+            
+            for idx in self.graph.node_indices() {
+                let mut rank_sum = 0.0;
+                
+                // Sum contributions from incoming edges
+                for edge_ref in self.graph.edges_directed(idx, Direction::Incoming) {
+                    let source = edge_ref.source();
+                    let out_degree = self.graph.edges(source).count().max(1) as f32;
+                    rank_sum += ranks[&source] / out_degree;
+                }
+                
+                new_ranks.insert(idx, (1.0 - damping) / node_count + damping * rank_sum);
+            }
+            
+            ranks = new_ranks;
+        }
+        
+        // Convert to node IDs
+        ranks.iter().filter_map(|(idx, rank)| {
+            self.graph.node_weight(*idx).map(|n| (n.id.clone(), *rank))
+        }).collect()
+    }
+
+    /// Detect communities using simple connected components
+    pub fn detect_communities(&self) -> HashMap<String, usize> {
+        let mut communities: HashMap<NodeIndex, usize> = HashMap::new();
+        let mut community_id = 0;
+        let mut visited = std::collections::HashSet::new();
+        
+        for start_idx in self.graph.node_indices() {
+            if visited.contains(&start_idx) {
+                continue;
+            }
+            
+            // BFS to find connected component
+            let mut queue = std::collections::VecDeque::new();
+            queue.push_back(start_idx);
+            visited.insert(start_idx);
+            
+            while let Some(idx) = queue.pop_front() {
+                communities.insert(idx, community_id);
+                
+                // Add undirected neighbors
+                for edge_ref in self.graph.edges(idx) {
+                    let target = edge_ref.target();
+                    if visited.insert(target) {
+                        queue.push_back(target);
+                    }
+                }
+                
+                for edge_ref in self.graph.edges_directed(idx, Direction::Incoming) {
+                    let source = edge_ref.source();
+                    if visited.insert(source) {
+                        queue.push_back(source);
+                    }
+                }
+            }
+            
+            community_id += 1;
+        }
+        
+        // Convert to node IDs
+        communities.iter().filter_map(|(idx, comm)| {
+            self.graph.node_weight(*idx).map(|n| (n.id.clone(), *comm))
+        }).collect()
+    }
 }
 
 // ============================================================================
@@ -365,6 +482,25 @@ impl CartographerWasm {
             self.engine.graph.node_count(),
             self.engine.graph.edge_count()
         )
+    }
+
+    #[wasm_bindgen]
+    pub fn find_shortest_path(&self, from_id: &str, to_id: &str) -> Result<String, String> {
+        let path = self.engine.shortest_path(from_id, to_id)
+            .ok_or_else(|| "No path found".to_string())?;
+        serde_json::to_string(&path).map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn calculate_pagerank(&self, iterations: Option<usize>) -> Result<String, String> {
+        let ranks = self.engine.calculate_pagerank(iterations.unwrap_or(20));
+        serde_json::to_string(&ranks).map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen]
+    pub fn detect_communities(&self) -> Result<String, String> {
+        let communities = self.engine.detect_communities();
+        serde_json::to_string(&communities).map_err(|e| e.to_string())
     }
 }
 
