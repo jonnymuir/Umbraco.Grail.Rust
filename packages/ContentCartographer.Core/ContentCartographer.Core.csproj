@@ -9,12 +9,22 @@
     <Description>Content Cartographer - Interactive 3D force-directed graph visualization of Umbraco content relationships powered by Rust WASM</Description>
     <Authors>Umbraco Grail</Authors>
     <OutputType>Library</OutputType>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms.Core" Version="17.0.0" />
     <PackageReference Include="Umbraco.Cms.Web.Common" Version="17.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <!-- Include App_Plugins files to be copied to consuming projects -->
+  <ItemGroup>
+    <Content Include="App_Plugins\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>contentFiles\any\any\wwwroot\App_Plugins</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
   </ItemGroup>
 
   <!-- Include WASM artifacts -->

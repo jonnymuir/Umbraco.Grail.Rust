@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.umbraco.com/v17/manifests/package.json",
+	"id": "Umbraco.ContentCartographer",
+	"name": "Content Cartographer",
+	"version": "1.0.1",
+	"extensions": [
+		{
+			"name": "Content Cartographer Bundle",
+			"alias": "Umbraco.ContentCartographer.Bundle",
+			"type": "bundle",
+			"js": "/app_plugins/content-cartographer/extensions.js?v=2"
+		}
+	]
+}

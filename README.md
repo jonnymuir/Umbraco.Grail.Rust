@@ -1,23 +1,34 @@
 # Umbraco.Grail.Rust 🗺️
 
-**Content Cartographer** - An interactive 3D force-directed graph visualization of your Umbraco site structure, powered by Rust WASM.
+**Content Cartographer** - A backoffice Property Editor for Umbraco 17 that visualizes content relationships as an interactive 3D force-directed graph, powered by Rust WASM.
 
 ## What is Content Cartographer?
 
-Content Cartographer transforms how you understand your Umbraco site's architecture. See your entire content ecosystem as an interactive 3D force-directed graph where:
+Content Cartographer is a Property Editor that transforms how you understand content structure **directly in the Umbraco backoffice**. Add it to any Document Type and:
 
-- **Nodes** = Content pages, media, tags
-- **Edges** = Relationships: parent-child, media usage, tags, references
-- **Physics** = Rust-powered calculations instantly layout 50,000+ node graphs
-- **Impact Analysis** = "What breaks if I delete this node?"
+- **Visualize** the selected content node and all its relationships as a 3D force-directed graph
+- **Understand** your content ecosystem at a glance
+- **Navigate** relationships interactively
+- **Analyze Impact** - see what depends on each content node
 
-## Why This?
+## Architecture: Rust Bridge Pattern
 
-**Problem:** Traditional content management UI hides the true structure of large sites.
+This project demonstrates how to build Umbraco backoffice components using Rust for heavy computation:
 
-**Solution:** Visualize it. In 3D. Powered by Rust.
+```
+Umbraco 17 Backoffice (C# + Angular)
+        ↓
+  Property Editor (Lit Web Component)
+        ↓
+  WASM Module (Rust)
+  ├─ petgraph (graph algorithms)
+  ├─ Fruchterman-Reingold (force-directed layout)
+  └─ serde (serialization)
+        ↓
+  Three.js 3D Rendering
+```
 
-JavaScript alone is too slow for force-directed layout on 10k+ nodes. Rust/WASM makes it **instant**, leaving the web component lightweight and responsive.
+**Why Rust WASM?** JavaScript alone can't efficiently layout 10k+ node graphs. Rust calculations happen in **microseconds** while JavaScript rendering stays responsive.
 
 ## Quick Start
 
@@ -36,7 +47,7 @@ This creates a fresh demo Umbraco 17 instance with Content Cartographer pre-inst
 **After setup:**
 1. Open https://localhost:44356/umbraco (backoffice)
 2. Follow the "Setting Up Test Content" section below
-3. Visit https://localhost:44356/cartographer to see the 3D visualization
+3. Content Cartographer will appear as a Property Editor on your Document Types
 
 ### Option 2: Manual Installation
 
@@ -93,23 +104,35 @@ In the Umbraco backoffice:
    - Fill in Name and Title
    - **Save & Publish**
 
-### Step 3: View Visualization
+### Step 3: Add Property Editor to Document Type
 
-Visit: **https://localhost:44356/cartographer**
+Now let's add Content Cartographer to your Home document type:
 
-You should see:
-- **6 green spheres** representing your content nodes
-- **Gray lines** showing parent-child relationships
-- **Statistics sidebar** showing 6 nodes, 5 edges
-- Nodes gently rotating with interactive controls
+1. **Go to:** Settings > Document Types > Home
+2. **Design tab** > Scroll down and add new property:
+   - Name: `Content Graph`
+   - Alias: `contentGraph`
+   - Property Type: **Content Cartographer**
+3. **Save**
 
-### Interactive Features
+### Step 4: View Visualization in Backoffice
 
-Once the graph loads:
-- **Click and drag** - Rotate the view
+1. **Go to:** Content > Home Page
+2. **Scroll down** to see the "Content Graph" property
+3. You should see:
+- **3D force-directed graph** centered on the current content node
+- **Green spheres** representing related content
+- **Gray connecting lines** showing parent-child relationships
+- **Statistics panel** showing node count, relationships, and metrics
+
+### Interactive Controls
+
+In the backoffice property editor:
+- **Left click + drag** - Rotate the 3D view
+- **Right click + drag** - Pan the view
 - **Scroll** - Zoom in/out
-- **Hover** - See node names
-- **Graph stats** - Node count and connection metrics
+- **Hover over nodes** - See content names
+- **Click nodes** - Trigger impact analysis (shows dependencies)
 
 ## Project Structure
 
@@ -140,47 +163,89 @@ Once the graph loads:
 └── README.md                       # This file
 ```
 
-## Architecture
+## Architecture: Umbraco 17 Property Editor Pattern
+
+### How It Works
+
+1. **Property Editor Registration** (`umbracomanifest.json`)
+   - Registers as `Umbraco.ContentCartographer` property type
+   - Adds to Document Type design surface
+   
+2. **Backoffice Integration** (Angular + C#)
+   - Property editor HTML loads the Lit web component
+   - Angular controller passes current `nodeId` from content tree
+   - Component re-renders when you navigate to different content nodes
+
+3. **WASM Bridge** (Rust → JavaScript)
+   - Web component calls API: `POST /api/cartographer/graph`
+   - Backend sends graph data for selected node
+   - Rust WASM calculates optimal layout (microseconds)
+   - Three.js renders 3D visualization in real-time
+
+4. **Rendering** (Lit + Three.js)
+   - Lit manages component lifecycle and updates
+   - Three.js renders 3D scene to canvas
+   - Statistics sidebar shows metadata
+   - Interactive controls for exploration
 
 ### Backend Stack
-- **Umbraco 17** - Headless CMS
-- **.NET 10** - Runtime
-- **C# Controllers** - REST API endpoints
-- **CartographyService** - Business logic (content graph building, impact analysis)
+- **Umbraco 17** - Headless CMS & backoffice
+- **.NET 10** - API runtime
+- **C# Controllers** - REST endpoints (`/api/cartographer/`)
+- **CartographyService** - Graph building, traversal, impact analysis
 
 ### Frontend Stack
-- **Lit 2.7** - Web components framework
-- **Three.js r160** - 3D rendering
-- **Rust WASM** - Graph physics (petgraph, force-directed layout)
+- **Angular 1.x** - Umbraco backoffice framework (property editor registration)
+- **Lit 2.7** - Modern web component rendering
+- **Three.js r160** - WebGL 3D visualization
+- **TypeScript** - Type-safe component code
+
+### Rust/WASM Layer
+- **petgraph** - Graph data structures and algorithms
+- **Fruchterman-Reingold** - Force-directed layout algorithm
+- **serde_json** - Serialization between Rust and JavaScript
+- **wasm-bindgen** - Rust ↔ JavaScript interop
 
 ### Build Pipeline
 ```
-Rust source → wasm-pack → grail_core.wasm (~200KB)
-TypeScript → Vite → content-cartographer.ts
-C# source → dotnet build → Umbraco.Grail.ContentCartographer.dll
+Rust source (.rs)
+    ↓ wasm-pack build
+grail_core.wasm (~200KB) + .js + .d.ts
+    ↓ Copy to wwwroot/wasm
+Deployed in Umbraco package
+    ↑
+TypeScript source (.ts)
+    ↓ Vite bundler
+property-editor.js (~15KB)
+    ↓ Deployed to app_plugins/
+Ready in backoffice
+    ↑
+C# Controllers + Services
+    ↓ dotnet build
+Umbraco.Grail.ContentCartographer.dll
+    ↓ Deployed to bin/
+API endpoints ready
 ```
 
 ## Key Features
 
-### 🎨 3D Force-Directed Visualization
-- Interactive orbit controls
-- Real-time physics (via Rust)
-- Color-coded node types
-- Smooth WebGL rendering
+### 🎨 Backoffice Property Editor
+- Add to any Document Type in seconds
+- Shows content relationships for current node
+- No page redirect - stays in backoffice
+- Responsive and embedded design
 
-### 📊 Impact Analysis
-Click any node to see:
-- **Directly dependent** items (immediate cascade)
-- **Indirectly dependent** items (secondary cascade)
-- **Media references** (orphaned assets)
-- **Backlinks** (what links here)
-- **Impact score** (criticality 0-100%)
+### 📊 3D Force-Directed Visualization
+- Interactive orbit controls (drag to rotate, scroll to zoom)
+- Real-time physics calculation via Rust WASM
+- Central node highlighted (the one you're editing)
+- Related content shown in context
 
 ### ⚡ Performance
-- Rust engine handles heavy lifting
-- Layout calculation: milliseconds
-- Supports 50,000+ node graphs
-- Minimal JavaScript overhead
+- Force layout: **milliseconds** (Rust)
+- Supports **50,000+ node** graphs
+- WebGL rendering: smooth 60fps
+- Minimal JavaScript: Lit web component only ~15KB
 
 ## Development
 

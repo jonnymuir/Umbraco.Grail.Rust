@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Content Cartographer Property Editor</title>
+    <!-- Three.js for 3D rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/three.min.js"></script>
+    <!-- Our compiled web component (UMD format) -->
+    <script src="../cartographer.umd.js"></script>
+</head>
+<body>
+    <div ng-controller="Umbraco.PropertyEditors.ContentCartographerController">
+        <content-cartographer-editor 
+            node-id="{{model.value.nodeId}}"
+            auto-focus="{{preValues.autoFocus}}"
+            show-stats="{{preValues.showStats}}"
+            node-size="{{preValues.nodeSize}}">
+        </content-cartographer-editor>
+    </div>
+
+    <script>
+        // Umbraco property editor controller
+        angular.module("umbraco").controller(
+            "Umbraco.PropertyEditors.ContentCartographerController",
+            function ($scope, $timeout, contentResource) {
+                // Ensure model has required structure
+                if (!$scope.model.value) {
+                    $scope.model.value = {
+                        nodeId: 0
+                    };
+                }
+
+                // Get current content node from Umbraco context
+                if ($scope.umbContentNode && $scope.umbContentNode.id) {
+                    $scope.model.value.nodeId = $scope.umbContentNode.id;
+
+                    // Pass to web component
+                    $timeout(() => {
+                        const editor = document.querySelector('content-cartographer-editor');
+                        if (editor) {
+                            editor.nodeId = $scope.umbContentNode.id;
+                        }
+                    }, 100);
+                }
+
+                // Watch for node changes
+                $scope.$watch('umbContentNode.id', (newVal) => {
+                    if (newVal) {
+                        $scope.model.value.nodeId = newVal;
+                        const editor = document.querySelector('content-cartographer-editor');
+                        if (editor) {
+                            editor.nodeId = newVal;
+                        }
+                    }
+                });
+            }
+        );
+    </script>
+</body>
+</html>

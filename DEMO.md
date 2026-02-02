@@ -1,6 +1,6 @@
-# Content Cartographer Demo - Umbraco 17 Test Instance
+# Content Cartographer Demo - Umbraco 17 Backoffice Property Editor
 
-This guide walks you through creating a fresh Umbraco 17 instance with sample content to test Content Cartographer.
+This guide walks you through creating a fresh Umbraco 17 instance and using Content Cartographer as a backoffice property editor.
 
 ## Quick Start (Automated - 2 minutes)
 
@@ -21,32 +21,54 @@ This automatically:
 - ✅ Builds the Rust WASM engine
 - ✅ Builds the TypeScript component
 - ✅ Compiles the C# package
-- ✅ Deploys all artifacts to the correct locations
+- ✅ Deploys Content Cartographer as a property editor
 - ✅ Starts the Umbraco server on https://localhost:44356
 
-### 2. Create Sample Content
+### 2. Add Content Cartographer to a Document Type
 
-Go to https://localhost:44356/umbraco (backoffice) and:
+Go to https://localhost:44356/umbraco (backoffice):
 
 1. **Create Document Types** (Settings > Document Types):
    - **Home** (alias: `home`, allow as root)
+     - Add property: `Content Graph` (alias: `contentGraph`, type: **Content Cartographer**)
    - **Page** (alias: `page`, allow as root)
+     - Add property: `Content Graph` (same as above)
 
-2. **Create Content** (Content > Create):
-   - Home Page (root)
-     - About Us (child)
-     - Services (child)
-     - Contact (child)
-     - Force Graphs (child)
-     - Relationships (child)
+   **Save each type after adding the property**
 
-   **Important:** Publish each page after creating it
+2. **Create Sample Content** (Content > Create):
+   - **Home Page** (doc type: Home)
+     - About Us (doc type: Page)
+     - Services (doc type: Page)
+     - Contact (doc type: Page)
+     - Force Graphs (doc type: Page)
+     - Relationships (doc type: Page)
 
-### 3. View the Visualization
+   **Important:** Publish each page after creating it (Actions > Publish)
 
-Visit: **https://localhost:44356/cartographer**
+### 3. View the Visualization in the Backoffice
 
-You should see a 3D interactive graph of your content structure!
+1. Go to **Content > Home Page**
+2. **Scroll down** to find the **"Content Graph"** property
+3. You should see:
+   - A 3D visualization with green spheres
+   - The central node (bright green) = Home Page
+   - Connected nodes (blue) = related content
+   - Gray lines = parent-child relationships
+   - Statistics sidebar showing node count, relationship count
+
+4. **Try interactive controls:**
+   - Click and drag to rotate
+   - Scroll to zoom
+   - Hover over nodes to see names
+
+### 4. View Other Content
+
+Navigate to different content pages:
+- Go to **Content > Home Page > About Us**
+- Scroll to **"Content Graph"** property
+- The graph now shows **About Us** as the central node (bright green)
+- All its relationships displayed relative to this page
 
 ---
 
@@ -58,307 +80,187 @@ You should see a 3D interactive graph of your content structure!
 dotnet new umbraco -n UmbracoDemoCartographer --release Latest
 
 cd UmbracoDemoCartographer
-
 dotnet restore
 ```
 
 ### 2. Build and Deploy Content Cartographer
 
+From the root of the repository:
+
 ```bash
-# Build the package
-cd ../packages/ContentCartographer.Core
-./build.sh
+# Build the property editor package
+cd packages/ContentCartographer.Core
+./build.sh  # or build.ps1 on Windows
 
-# Copy DLL
+# Copy DLL to the Umbraco bin directory
 cp bin/Release/net10.0/Umbraco.Grail.ContentCartographer.dll \
-   ../../demo_instance/UmbracoDemoCartographer/bin/
+   ../../UmbracoDemoCartographer/bin/
 
-# Copy WASM files
-mkdir -p ../../demo_instance/UmbracoDemoCartographer/wwwroot/wasm
-cp wwwroot/wasm/* ../../demo_instance/UmbracoDemoCartographer/wwwroot/wasm/
+# Copy WASM files to wwwroot
+mkdir -p ../../UmbracoDemoCartographer/wwwroot/app_plugins/content-cartographer/wasm
+cp wwwroot/app_plugins/content-cartographer/wasm/* \
+   ../../UmbracoDemoCartographer/wwwroot/app_plugins/content-cartographer/wasm/
 ```
 
 ### 3. Start Umbraco
 
 ```bash
-cd ../../demo_instance/UmbracoDemoCartographer
+cd ../../UmbracoDemoCartographer
 dotnet run
 ```
 
-Navigate to https://localhost:44356/umbraco
+Wait for startup message, then navigate to: **https://localhost:44356/umbraco**
 
-```bash
-# Once package is published to NuGet
-dotnet add package Umbraco.Grail.ContentCartographer
-```
+### 4. Create Document Types with Content Cartographer
 
-### 4. Restart Umbraco
+In the backoffice:
 
-Stop the running instance (Ctrl+C) and restart:
-
-```bash
-dotnet run
-```
-
-The Composer will auto-register the package. You'll see in the console:
-
-```
-[INFO] Registering CartographerComposer...
-```
-
-## Creating Sample Content
-
-Once Umbraco is running at `http://localhost:5000`, log in to the backoffice and create sample content.
-
-### Step 1: Create a Document Type
-
-1. Go to **Content** → **Settings** (left sidebar)
-2. Click **Document Types** → **+ Create**
-3. Create **"Page"**:
-   - Alias: `page`
-   - Icon: document
-   - Allow as root: **Yes**
+1. Go to **Settings > Document Types > Create**
+2. Create **Home**:
+   - Name: `Home`
+   - Alias: `home`
+   - Check: **Allow as root**
+   - Go to **Design** tab
    - Add property:
-     - Name: **Title**
+     - Name: `Title`
      - Alias: `title`
-     - Editor: **Textstring**
+     - Type: `Textstring`
    - Add property:
-     - Name: **Body**
-     - Alias: `body`
-     - Editor: **Rich Text Editor**
+     - Name: `Content Graph`
+     - Alias: `contentGraph`
+     - Type: **Content Cartographer** (property editor)
+   - Click **Save**
 
-4. Click **Save**
+3. Create **Page** (same as above, but alias: `page`)
 
-### Step 2: Create Content Structure
+### 5. Create Sample Content
 
-1. Go to **Content** → **+** (Create root node)
-2. Select **"Page"** document type
-3. Fill in:
-   - **Title**: "Acme Corporation"
-   - Click **Save and Publish**
+1. Go to **Content > Create**
+2. Create root **"Home Page"** (type: Home)
+   - Title: "Welcome"
+   - Scroll down to **Content Graph** property
+   - You should see the 3D visualization!
+3. Create child pages under Home Page:
+   - About Us (Page)
+   - Services (Page)
+   - Contact (Page)
+   - Blog (Page)
+   - Gallery (Page)
 
-4. Under "Acme Corporation", create child pages (right-click → Create):
-   - **About Us**
-   - **Services**
-   - **Products**
-   - **Contact**
-   - **Blog**
+   For each page:
+   - Fill in Title
+   - **Publish** (must publish for it to appear in graph)
+   - Scroll down to see **Content Graph** update
 
-5. Under **Blog**, create article pages:
-   - **Article 1: Getting Started**
-   - **Article 2: Advanced Topics**
-   - **Article 3: Case Studies**
+4. Add more child pages under these, creating a deeper hierarchy
 
-6. Under **Services**, create:
-   - **Consulting**
-   - **Development**
-   - **Support**
+### 6. Explore the Visualization
 
-Final structure should look like:
+Navigate to different pages and watch the graph update:
+
+1. Click **Home Page** → See all children in 3D graph (Home is central green node)
+2. Click **About Us** → Graph recenters to About Us
+3. Click **Services** → Shows Services and its children
+4. Try the interactive controls:
+   - Drag to rotate
+   - Scroll to zoom
+   - Observe statistics update for each page
+
+## Testing the APIs Directly
+
+To verify the backend is working:
+
+### Health Check
+```bash
+curl https://localhost:44356/api/cartographer/health
 ```
-Acme Corporation (id: 1)
-├── About Us (id: 2)
-├── Services (id: 3)
-│   ├── Consulting (id: 4)
-│   ├── Development (id: 5)
-│   └── Support (id: 6)
-├── Products (id: 7)
-├── Contact (id: 8)
-└── Blog (id: 9)
-    ├── Article 1 (id: 10)
-    ├── Article 2 (id: 11)
-    └── Article 3 (id: 12)
+
+Response:
+```json
+{"status":"ok","version":"1.0.0"}
 ```
 
-### Step 3: Create Media
-
-1. Go to **Media** → **+** (Create root)
-2. Select **Folder**
-3. Name: **Images**
-4. Create images in the folder:
-   - Upload some sample images (JPG/PNG)
-
-This gives us media relationships to visualize.
-
-### Step 4: Add Media References to Content
-
-Edit the **Page** document type and add a media picker:
-
-1. Settings → **Document Types** → **Page** → Edit
-2. Add property:
-   - Name: **Featured Image**
-   - Alias: `featuredImage`
-   - Editor: **Media Picker**
-3. Click **Save**
-
-Now edit content pages and add featured images. This creates `uses_media` relationships that the graph will visualize.
-
-## Testing Content Cartographer
-
-### Access the Component Demo
-
-1. Open a new browser tab to `http://localhost:5000/api/cartographer/health`
-   - Should return: `{"status":"ok","version":"1.0.0"}`
-
-2. Test graph API:
-   ```
-   POST http://localhost:5000/api/cartographer/graph
-   Content-Type: application/json
-   
-   {
-     "node_id": 1,
-     "depth": 3,
-     "include_media": true,
-     "include_tags": true,
-     "include_unpublished": false
-   }
-   ```
-
-3. Test impact API:
-   ```
-   POST http://localhost:5000/api/cartographer/impact?nodeId=1
-   ```
-
-### View in 3D Visualization
-
-Create a simple test page in the Umbraco backoffice to embed the component:
-
-1. Go to **Settings** → **Document Types** → **Create new**
-2. Create **"Test Page"**
-3. Add property:
-   - Name: **Content Cartographer**
-   - Alias: `contentCartographer`
-   - Editor: **Rich Text Editor**
-
-4. Create content page using this type
-5. In the rich text editor, add:
-   ```html
-   <content-cartographer nodeId="1" baseUrl="/api/cartographer"></content-cartographer>
-   ```
-
-6. Save and view the page in a browser console
-7. Open developer tools → **Console**
-8. You should see:
-   ```
-   ✅ WASM loaded
-   📡 Fetching graph from /api/cartographer/graph
-   📊 Graph loaded: { nodes: 12, edges: 15 }
-   ✅ Graph rendered (Rust physics)
-   ```
-
-### Expected Behavior
-
-- **Graph renders** with your content as 3D nodes
-- **Blue nodes** = Content pages
-- **Green nodes** = Media (if featured images added)
-- **Red node** = Root (Acme Corporation)
-- **Lines** = Parent-child or media relationships
-- **Sidebar** shows impact metrics for the root node
-
-## Debugging
-
-### WASM Not Loading?
-
-Check browser console:
-1. Open **Developer Tools** (F12)
-2. Go to **Console** tab
-3. Look for errors like:
-   ```
-   Failed to load /wasm/grail_core_bg.wasm
-   ```
-
-**Solution:**
-- Ensure `wwwroot/wasm/` folder exists with:
-  - `grail_core.js`
-  - `grail_core_bg.wasm`
-  - `grail_core.d.ts`
-
-### API Returns 404?
-
+### Get Graph Data
+```bash
+curl -X POST https://localhost:44356/api/cartographer/graph \
+  -H "Content-Type: application/json" \
+  -d '{"node_id":1,"depth":3,"include_media":true}'
 ```
-Failed to fetch /api/cartographer/graph
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "nodes": [...],
+    "edges": [...],
+    "statistics": {
+      "nodeCount": 6,
+      "edgeCount": 5,
+      "averageConnections": 0.833
+    }
+  }
+}
 ```
+
+### Analyze Impact
+```bash
+curl -X POST https://localhost:44356/api/cartographer/impact?nodeId=1
+```
+
+Response shows what depends on node 1.
+
+## Troubleshooting
+
+### Property Editor Not Showing?
+
+**Problem:** "Content Cartographer" doesn't appear in the property type list
 
 **Solution:**
 - Restart Umbraco
-- Check that `CartographerApiController` is compiled into the DLL
-- Verify the DLL is in `bin/` folder
+- Check that build completed successfully
+- Verify DLL is in `bin/` directory
+- Check browser console for JavaScript errors
 
-### Graph Renders But No Nodes?
+### Graph Not Loading in Property?
+
+**Problem:** See loading spinner but graph never appears
 
 **Solution:**
-- Check that you created content pages
-- Verify content is **Published** (not draft)
-- Try with `"include_unpublished": true` in API request
+- Open DevTools (F12) → Network tab
+- Look for failed requests to `/api/cartographer/graph`
+- Check if content is **published** (not draft)
+- Try creating simple child pages first
+- Restart the browser
 
-## Performance Testing
+### WASM Files Not Found?
 
-### Large Graph Test
+**Problem:** Error about missing `.wasm` file
 
-To test with larger datasets:
+**Solution:**
+- Check `wwwroot/app_plugins/content-cartographer/wasm/` exists
+- Verify files are deployed:
+  - `grail_core.js`
+  - `grail_core_bg.wasm`
+  - `grail_core.d.ts`
+- Rebuild: `cd packages/ContentCartographer.Core && ./build.sh`
 
-1. Create 100+ content pages using a script:
+### Content Cartographer Already in Use?
 
-```csharp
-// In Umbraco package management console
-var root = _contentService.GetById(1);
-for (int i = 0; i < 100; i++)
-{
-    var page = _contentService.Create($"Article {i}", root, "page");
-    page.SetValue("title", $"Article {i}");
-    _contentService.SaveAndPublish(page);
-}
-```
+**Problem:** Error about property editor being used on other document types
 
-2. Test graph API with larger depth:
-```json
-{
-  "node_id": 1,
-  "depth": 4,
-  "include_media": true,
-  "include_tags": true,
-  "include_unpublished": false
-}
-```
-
-Monitor:
-- **API response time** (should be < 500ms for 1000 nodes)
-- **Rust layout calculation** (should be < 100ms)
-- **Browser rendering** (FPS in dev tools)
+**Solution:**
+- This is normal, just a warning
+- Multiple document types can use the same property editor
+- It's designed for this use case
 
 ## Next Steps
 
-### Integrate into Your Own Project
-
-1. Copy the built DLL to your Umbraco project
-2. Ensure `wwwroot/wasm/` is deployed
-3. Use the API endpoints in your custom dashboard/property editor
-4. Embed `<content-cartographer>` web component anywhere
-
-### Customize the Component
-
-Edit [content-cartographer.ts](packages/ContentCartographer.Core/src/components/content-cartographer.ts) to:
-- Change colors
-- Modify physics parameters
-- Add click handlers
-- Extend impact analysis display
-
-### Production Deployment
-
-1. **Build release:**
-   ```bash
-   ./build.sh
-   dotnet pack -c Release
-   ```
-
-2. **Publish to NuGet** (when ready)
-
-3. **Deploy to Azure/hosting:**
-   - Include wwwroot/wasm/ in deployment
-   - Ensure WebGL is enabled on hosting
-   - Configure CORS if APIs are cross-domain
-
-## Troubleshooting
+- ✅ View Content Cartographer on your backoffice property editors
+- ✅ Add it to more document types
+- ✅ Create larger content hierarchies to see how it scales
+- 📖 Read [PROPERTY_EDITOR.md](PROPERTY_EDITOR.md) for advanced usage
+- 🔧 See [packages/ContentCartographer.Core/README.md](packages/ContentCartographer.Core/README.md) for API details
 
 | Problem | Solution |
 |---------|----------|
